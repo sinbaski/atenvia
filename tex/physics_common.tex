@@ -1,0 +1,204 @@
+\usepackage{amssymb,amsmath,amsthm,amsfonts}
+% \usepackage{mathrsfs}
+% \usepackage{dsfont}
+\usepackage{enumerate}
+% \usepackage{etoolbox}
+
+%% \newtheorem{mdef}{Definition}
+
+\newcommand{\eqsplit}[2]{
+  \begin{equation}\label{#2}
+    \begin{split}
+      #1
+    \end{split}
+  \end{equation}}
+\newcommand{\eqnsplit}[1]{
+  \begin{eqnarray*}
+    #1
+  \end{eqnarray*}}
+\newcommand{\tran}[1]{
+  \tilde{#1}
+}
+\newcommand{\td}[2]{
+  \frac{d #1}{d #2}
+}
+%% \newcommand{\pd}[2]{
+%%   \frac{\partial #1}{\partial #2}
+%% }
+\newcommand{\ppd}[2]{
+  \frac{\partial^2 #1}{\partial #2^2}
+}
+\newcommand{\pdd}[3]{
+  \frac{\partial^2 #1}{\partial #2 \partial #3}
+}
+\newcommand{\otd}[1]{
+  \frac{d}{d #1}
+}
+\newcommand{\opd}[1]{
+  \frac{\partial}{\partial #1}
+}
+\newcommand{\oppd}[1]{
+  \frac{\partial^2}{\partial #1^2}
+}
+\newcommand{\opdd}[2]{
+  \frac{\partial^2}{\partial #1 \partial #2}
+}
+\newcommand{\ket}[1]{
+  |#1\rangle
+}
+\newcommand{\bra}[1]{
+  \langle#1|
+}
+\newcommand{\inn}[1]{
+  \langle#1\rangle
+}
+\newcommand{\mean}[1]{
+  \langle#1\rangle
+}
+\newcommand{\tr}{
+  \text{tr}\,
+}
+\newcommand{\re}{
+  \text{Re}\,
+}
+\newcommand\im{
+  \text{Im}\,
+}
+\newcommand{\arcsinh}{
+  \sinh^{-1}
+}
+\newcommand{\arccosh}{
+  \cosh^{-1}
+}
+\newcommand{\erfc}{
+  \text{erfc}
+}
+\newcommand{\E}{
+  \mathbb{E}
+}
+\renewcommand{\P}{
+  \mathbb{P}
+}
+\newcommand{\I}{
+  \mathbf{1}
+}
+\newcommand{\1}[1]{
+  \mathbf{1}_{\{#1\}}
+}
+\newcommand{\diag}{\operatorname{diag}}
+% \newcommand{\limsup}{\operatorname{limsup}}
+%% \newcommand{\diag}{
+%%   \text{diag\,}
+%% }
+\newcommand{\pop}[1]{
+\varepsilon_{#1}
+}
+
+\newcommand{\M}{
+  {\text{max}}
+}
+\newcommand{\m}{
+  {\text{min}}
+}
+
+% \newcommand{\ph}{
+%   {\text{arg}\,}
+% }
+\newcommand\erf{
+  \text{erf}
+}
+\renewcommand\vec[1]{
+  \mathbf{#1}
+}
+\newcommand\cov{
+  \text{cov}
+}
+\newcommand\var{
+  \text{var}
+}
+\newcommand\cor{
+  \text{cor}
+}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
+\newcommand\mat[1]{
+  \mathbf{#1}
+}
+\newcommand\mtx[1]{
+  \mathbf{#1}
+}
+\renewcommand \L {
+  \mathfrak{leb}
+}
+\newcommand{\floor}[1]{
+  \lfloor #1\rfloor
+}
+\newcommand{\ceil}[1]{
+  \lceil #1\rceil
+}
+\newcommand{\supp} {
+  \text{supp}\,
+}
+\newcommand{\img} {
+  \text{Img}\,
+}
+\newcommand{\reals} {
+  \mathbb R                 
+}
+\newcommand{\integers} {
+  \mathbb Z
+}
+\newcommand{\naturals} {
+  \mathbb N
+}
+\newcommand{\sphere} {
+  \mathbb S
+}
+\newtheorem{case}{case}
+
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords: }} #1}
+\providecommand{\subjclass}[1]{\textbf{\textit{Subject class: }} #1}
+
+\newcommand{\bfth}{\mbox{\boldmath$\theta$}}
+\newcommand{\bfTh}{\mbox{\boldmath$\Theta$}}
+\newcommand{\bfmu}{\mbox{\boldmath$\mu$}}
+\newcommand{\bfrho}{\mbox{\boldmath$\rho$}}
+\newcommand{\bfvarphi}{\mbox{\boldmath$\varphi$}}
+\newcommand{\bfbeta}{\mbox{\boldmath$\beta$}}
+\newcommand{\bfalpha}{\mbox{\boldmath$\alpha$}}
+\newcommand{\bfeta}{\mbox{\boldmath$\eta$}}
+\newcommand{\bfsigma}{\mbox{\boldmath$\sigma$}}
+\newcommand{\bfzeta}{\mbox{\boldmath$\zeta$}}
+\newcommand{\bfxi}{\mbox{\boldmath$\xi$}}
+
+\newcommand{\stj}{\stackrel{J_1}{\rightarrow}}
+\newcommand{\stv}{\stackrel{v}{\rightarrow}}
+\newcommand{\stw}{\stackrel{w}{\rightarrow}}
+\newcommand{\stww}{\stackrel{\wh w}{\rightarrow}}
+\newcommand{\ep}{\epsilon}
+\newcommand{\vap}{\varphi}
+\newcommand{\La}{\Lambda}
+
+%% \iftoggle{theoremdefs}{
+%% \newtheorem{theorem}{Theorem}
+%% \newtheorem{acknowledgement}{Acknowledgement}
+%% \newtheorem{axiom}{Axiom}
+%% \newtheorem{claim}{Claim}
+%% \newtheorem{hypothesis}{Hypothesis}
+%% \newtheorem{conclusion}{Conclusion}
+%% \newtheorem{condition}{Condition}
+%% \newtheorem{conjecture}{Conjecture}
+%% \newtheorem{corollary}{Corollary}
+%% \newtheorem{criterion}{Criterion}
+%% \newtheorem{definition}{Definition}
+%% \newtheorem{example}{Example}
+%% \newtheorem{exercise}{Exercise}
+%% \newtheorem{lemma}{Lemma}
+%% \newtheorem{notation}{Notation}
+%% \newtheorem{problem}{Problem}
+%% \newtheorem{proposition}{Proposition}
+%% \newtheorem{remark}{Remark}
+%% \newtheorem{solution}{Solution}
+%% \newtheorem{summary}{Summary}
+%% }{
+%% }

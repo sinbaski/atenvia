@@ -1,0 +1,24 @@
+\chapter{Trading Strategies}
+\section{volatility contraction \& breakouts}
+Define for $k \in \naturals$
+\begin{eqnarray*}
+  H_k &=&   \sup_{k-1 < s \leq k} P_s \\
+  L_k &=&   \inf_{k-1 < s \leq k} P_s 
+\end{eqnarray*}
+At time $t$, find the day $m$:
+\[
+  m = \max\left\{l \leq k \leq \floor t - 1:
+  H_k \geq \max_{k < l \leq \floor t} H_l,
+  \;
+  L_k \leq \min_{k < l \leq \floor t} L_l
+  \right\}
+\]
+A breakout happens at day $\ceil t$ if $L_{\ceil t} \geq H_m$ or
+$H_{\ceil t} \leq L_m$. They indicate upward/downward trends
+respectively.
+The idea is that contracted volatility (as measured by the high-low
+difference) followed by a breakout indicates the beginning of a trend.
+The 3 quantities - volume, range, and $\var(\log P_t - \log P_{t-1})$
+are expected to be highly dependent, as they all describe volatility.
+
+

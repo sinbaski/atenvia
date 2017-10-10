@@ -1,0 +1,69 @@
+\documentclass{report}
+\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue,bookmarksopen=true]{hyperref}
+\usepackage{bookmark}
+\input{../physics_common}
+
+\title{Playbook of Equity Trading}
+\author{Xie Xiaolei}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\chapter{Order Execution}
+\section{Order Types}
+\begin{enumerate}
+\item Market order - executed immdiately at the best available price from the order book.
+  Different prices for different batches of the same order may be the result for large-volume orders.
+  
+\item Limit order - may or may not be executed. Must be set at a lower price than the market price
+  for buy limit orders and at a price higher than the market price for sell limit orders.
+  The executed price is the limit price or better.
+
+  Conditions can be attached to a limit order:
+  \begin{itemize}
+  \item {\it fill-or-kill (FOK)}: The order must be executed immediately and completely or otherwise
+    cancelled altogether.
+  \item {\it all-or-none (AON)}: The order need not be executed immediately - a later time is OK - but it must
+    be executed at its entirety. For a buy order, the order book must have enough shares on offer at prices equal to
+    or lower than the limit price for the order to be carried through.
+    Conversely, for a sell order, the order book must have enough bids at prices equal to or higher than the limit price.
+  \end{itemize}
+
+  Validity in time of an order can also be specified:
+  \begin{itemize}
+  \item {\it Good-till-canceled}: Valid until canceled.
+  \item Valid until a specified time point, e.g. the end of the trading day.
+  \end{itemize}
+
+\item Stop order - think of stop loss.
+  For a sell stop order, the order is triggered as soon as a transaction is observed at
+  a price equal to or lower than the stop price; the order then becomes a market order.
+  For a buy stop order, the order is triggered as soon as a transaction is observed at
+  a price equal to or higher than the stop price.
+  
+\item Stop-limit order - similar to a stop order, but is converted to a limit order when triggered.
+
+\end{enumerate}
+
+\section{Execution Algorithms}
+\begin{enumerate}
+\item {\bf Volume Weighted Average Price}
+
+  ``However, there are other uses for the VWAP, and one such strategy is to purchase a stock for individual investors just as the VWAP pierces the intraday VWAP moving average, as this can indicate a momentum shift in the share price.''- Investpedia
+
+  ``Often, a VWAP trade will buy or sell 40\% of a trade in the first half of the day and then the other 60\% in the second half of the day''.    - Wikipedia
+  
+\item{\bf Time Weighted Average Price}
+
+``A TWAP trade would most likely execute an even 50/50 volume in the first and second half of the day'' - Wikipedia
+
+  
+\end{enumerate}
+
+\input{MarketImpact}
+\input{TradingStrategy}
+
+\bibliographystyle{unsrt}
+\bibliography{../../../kkasi/thesis/econophysics}
+\end{document}

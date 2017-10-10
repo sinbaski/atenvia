@@ -1,0 +1,116 @@
+\chapter{Market Impact \& Optimal Execution}
+\section{Statistics of the order book}
+Bouchaud et al \cite{BouchaudMezardPotters2002} gives a model of the
+order book: let $a(t)$ be the lowest asking price and $b(t)$ the
+highest bidding price at time $t$. The new buy limt order comes in at
+price $b(t) - \Delta_b$ and the new sell limit order comes in at
+$a(t) + \Delta_a$. The authors reported that $\Delta_a, \Delta_b$
+could be considered independent, identically distributed. Let
+$\Delta$ have the same distribution as $\Delta_a$ and $\Delta_b$.
+
+The distribution of $\Delta$ has Pareto tail. Let
+$f_{\Delta | \Delta \geq 1}$ denote the probability density function
+of $\Delta$ conditional on $\Delta \geq 1$.
+\begin{equation}
+  \label{eq:rtwhyt}
+  f_{\Delta | \Delta \geq 1}(x) = {
+    K^\alpha
+    \over
+    (\mu + x)^{\alpha + 1}
+  } \frac{1}{\P(\Delta \geq 1)}
+\end{equation}
+The tail index $\alpha$ is reported to be approximately $0.6$ for all
+equities. Note this implies $\E \Delta = \infty$. It is also reported
+that the distribution of $\log V$, $V$ being the size of the new limit
+order, buy or sell, is uniformly distributed. Formally
+\begin{equation}
+  \label{eq:pojfg}
+  \P(V \leq x) = a(\log x - b)
+  \quad
+  e^b \leq x \leq e^{1/a + b}
+\end{equation}
+The authors also reported, empirically
+\begin{eqnarray}
+  \E(V|\Delta = x, x \leq \Delta^*) &=& c \nonumber \\
+  \E(V|\Delta = x, x > \Delta^*) &=& c' x^{-\nu},\; \nu \approx 1.5 \label{eq:rfepomj}
+\end{eqnarray}
+where $\Delta^*$ is a constant dependent on the stock itself.
+
+From \eqref{eq:rtwhyt} and \eqref{eq:rfepomj}, one can derive the average
+volume when $\Delta \leq \Delta^*$ and when $\Delta > \Delta^*$:
+\begin{eqnarray*}
+  \E(V \1{\Delta \leq \Delta^*}) &=& c \P(\Delta \leq \Delta^*) \\
+  \E(V \1{\Delta > \Delta^*}) &=& \int_{\Delta^*}^\infty c' x^{
+                                  -\alpha - \nu - 1
+                                  } K^\alpha \left(
+                                  \frac{\mu}{x} + 1
+                                  \right)^{-\alpha - 1}
+                                  \frac{dx}{\P(\Delta > 1)}
+\end{eqnarray*}
+By Karamata's theorem,
+\[
+  \E(V \1{\Delta > \Delta^*}) \sim c' \left(
+    {\mu \over \Delta^*} + 1
+  \right)^{-\alpha - 1} K^\alpha
+  {(\Delta^*)^{-\alpha-\nu} \over \alpha + \nu}
+  {1 \over \P(\Delta > 1)}
+  \quad
+  \text{ as }
+  \Delta^* \to \infty
+\]
+
+
+\section{Square root law}
+Bouchaud et al. \cite{Bouchaud2011} gave a model to the average price
+change of an equity following the completion of a large order. It was
+reported that the law was valid regardless of the way of execution -
+over-the-counter or electronically, and regardless of the execution
+strategy - using limit or market orders. Assume the order is executed
+in its entirety within 1 trading day.
+\begin{itemize}
+\item $\{P_t\}_{t \in \reals_+}$: the stochastic process of prices of
+  the equity.
+\item $\tau$: time of the trade that fullfils the order. The first
+  trade of the order is assumed to happen at a deterministic time
+  $s < \tau$.
+\item $Q$: size of the order, i.e. the number of shares that are
+  intended to be traded - bought or sold.
+\item $\{V_n\}_{n \in \naturals}$: Daily trading volumes of the
+  equity.
+\item $\{\sigma_n\}_{n \in \naturals}$: Daily volatilities of the
+  equity.
+\end{itemize}
+Bouchaud et al. argued
+\[
+  \E (P_\tau - P_s) = c \E \sigma_{\ceil \tau} \left(
+    {Q \over \E V_{\ceil \tau}}
+  \right)^{1/2}
+\]
+The main arguments are as follows: Traders do not reveal their
+intensions too early but rather send orders depending on the market
+situation. Hence there is a latent order book that reflect the
+interests of traders. Let
+\begin{itemize}
+\item $\lambda(u)$: the number of new shares added to the buy side of
+  the latent order book at price $P_t - u$ in unit time and equally,
+  the number of new shares added to the sell side of the latent order
+  book at price $P_t + u$ in unit time. It is assumed that the buy
+  side and the sell side of the latent order book change in the same
+  way with the market price and $\Delta$ is independent of the market
+  price.
+
+\item $v(u, u')$: the number of shares on the buy side of the latent
+  order book that are moved from price $P_t - u$ to price $P_t - u'$
+  in unit time. Equally, it is also the number of shares on the sell
+  side of the latent order book that are moved from price $P_t + u$
+  to price $P_t + u'$.
+
+\item $W (u, t)$: the volume on the latent order book for buy (sell)
+  at price $P_t - u$ ($P_t + u$). $\rho(u, t) = \E W(u, t)$.
+\end{itemize}
+
+Essentially we assume that changes to the latent order book are always
+symmetric and speculative in nature.
+
+
+
