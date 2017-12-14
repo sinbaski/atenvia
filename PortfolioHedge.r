@@ -174,98 +174,65 @@ cal.hedge <- function(X, lookback, confidence=0.05, loss.tol=0.05)
 ## X$value: Worth of the portfolio at market close.
 cal.hedge.2 <- function(X, lookback, threshold)
 {
-    adj.min <- 0.005;
     n <- dim(X)[1];
+    ## Number of shares to hedge.
     hedge <- rep(0, n);
+    ## Number of shares held
+    holding <- rep(0, n);
     drift <- rep(NA, n);
     ## Number of trading days in a year
     N <- 252;
     CdDD <- cummax(X$value) - X$value;
+    ## for (t in 161:n) {
     for (t in (lookback):n) {
+        holding[t] <- holding[t-1];
         ## Compute the entry point to start hedging
-        spy.dist <- fit.dist(X$spy[(t-lookback+1):t]);
-        if (spy.dist$bic == Inf) continue;
-        drift[t] <- spy.dist$mu;
-        if (spy.dist$mu * N < -threshold) {
-            ## The SPY drift is significantly positive.
+        dist.ret <- fit.dist(X$spy[(t-lookback+1):t]);
+        if (dist.ret$bic == Inf) continue;
+        drift[t] <- dist.ret$mu;
+        if (dist.ret$mu * N < -threshold) {
+            ## The SPY drift is significantly negative.
             model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
-            hedge[t] <- -X$net_expo[t] * coef(model)[2];
+            holding[t] <- -X$net_expo[t] * coef(model)[2]/X$closing[t];
+        } else if (dist.ret$mu * N > threshold) {
+            holding[t] <- 0;
+            ## drift positive.
+            next;
         } else {
-            ## drift uncertain. Treat as 0. Consult drawdown distribution
+            ## fit the price distribution
+            ## stop("unclear trend");
+            ## warning(sprintf("unclear trend at %d", t));
+            ## model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
+            ## dist.price <- fit.dist(X$closing[(t-lookback+1):t]);
+            ## if (dist.price$bic == Inf) next;
+            ## if (dist.price$dist == "norm") {
+            ##     ub <- qnorm(p=0.95, mean=dist.price$mu, sd=dist.price$sig);
+            ##     lb <- qnorm(p=0.05, mean=dist.price$mu, sd=dist.price$sig);
+            ## } else if (dist.price$dist == "t") {
+            ##     ub <- qt(p=0.95, df=dist.price$df) + dist.price$mu;
+            ##     lb <- qt(p=0.05, df=dist.price$df) + dist.price$mu;
+            ## } else {
+            ##     stop("Unknown distribution");
+            ## }
+            ## if (X$closing[t] > ub) {
+            ##     holding[t] <- -X$net_expo[t] * coef(model)[2]/X$closing[t];
+            ## } else if (X$closing[t] > lb && X$closing[t] < ub) {
+            ##     holding[t] <- 0;
+            ## }
             next;
         }
     }
     
-    V <- matrix(0, nrow=n, ncol=2);
-    V[, 1] <- hedge;
+    cash <- rep(0, n);
     for (t in 2:n) {
-        V[t, 2] <- V[t-1, 2] + V[t-1, 1]/X$closing[t-1] * X$closing[t] - V[t, 1];
+        cash[t] <- cash[t-1] - (holding[t] - holding[t-1])* X$closing[t];
     }
-    H <- apply(V, MARGIN=1, FUN=sum);
-    Y <- H + X$value;
+    Y <- cash + holding * X$closing + X$value;
     Z <- cummax(Y);
     DD <- (Z - Y)/Z;
-    return(list(hit=H/X$value, DD=DD, hedge=hedge, Y=Y));
+    return(list(hit=1 - Y/X$value, DD=DD, hedge=hedge, Y=Y));
 }
 
-spy.short <- function(S, lookback, threshold)
-{
-    adj.min <- 0.005;
-    n <- length(S);
-    hedge <- rep(0, n);
-    ## L <- 120;
-    L <- 0;
-    ## Cash on the left, number of shares on the right.
-    V <- c(rep(1, max(lookback, L)+1), rep(0, n-max(lookback, L)-1));
-    V <- cbind(V, rep(0, n));
-    exposure.max <- 0.5;
-    drift <- rep(NA, n);
-    vol <- rep(NA, n);
-    ## Number of trading days in a year
-    N <- 252;
-    for (t in (max(lookback, L)+1):n) {
-        if (V[t-1, 1] + V[t-1, 2] * S[t] < 0) {
-            ## We are bankrupt.
-            V[t, ] <- V[t, ];
-            continue;
-        }
-        ret <- diff(log(S[(t-lookback + 1) : t]));
-        ## Compute the entry point to start hedging
-        spy.dist <- fit.dist(ret);
-        ## mdl <- fit.garch(ret);
-        ## if (mdl$bic < Inf) 
-        if (spy.dist$bic < Inf) drift[t] <- spy.dist$mu;
-        exposure <- (V[t-1, 1] + V[t-1, 2] * S[t]) * exposure.max;
-        if (spy.dist$bic < Inf && spy.dist$mu * N < -threshold) {
-            ## V[t, 2] <- -exposure / S[t];
-            ## hedge[t] <- V[t, 2] - V[t-1, 2];
-            V[t, 2] <- 0;
-            hedge[t] <- -V[t-1, 2];
-        } else if (spy.dist$bic < Inf && spy.dist$mu * N > threshold) {
-            V[t, 2] <- exposure / S[t];
-            hedge[t] <- V[t, 2] - V[t-1, 2];            
-        } else {
-            ## no clear trend
-            ## V[t, 2] <- 0;
-            ## hedge[t] <- -V[t-1, 2];
-            V[t, 2] <- V[t-1, 2];
-        }
-        V[t, 1] <- V[t-1, 1] - S[t] * hedge[t];
-    }
-
-    ## graphics.off();
-    ## par(mfrow=c(2, 1));
-    ## W <- V[, 1] + S * V[, 2];
-    ## I <- which(drift * N > 0.1);
-    ## J <- which(drift * N < -0.1);
-
-    ## plot(xts(S, order.by=as.Date(data$tm)), type="l", col="#000000");
-    ## lines(xts(S[I], order.by=as.Date(data$tm[I])), type="l", col="#00FF00");
-    ## lines(xts(S[J], order.by=as.Date(data$tm[J])), type="l", col="#FF0000");
-
-    ## plot(xts(W, order.by=as.Date(data$tm)), type="l", col="#000000");
-
-}
 
 cal.hedge.1 <- function(X, lookback, dd.entry, dd.exit)
 {
@@ -362,7 +329,7 @@ graphics.off();
 ##par(mfrow=c(2, 1));
 plot(xts(X$value, order.by=as.Date(data$tm)), type="l", col="#000000");
 ## lines(xts(hd$Y, order.by=as.Date(data$tm)), col="#00FF00");
-lines(xts(Y, order.by=as.Date(data$tm)), col="#00FF00");
+lines(xts(hd.2$Y, order.by=as.Date(data$tm)), col="#00FF00");
 
 plot(xts(Y - X$value, order.by=as.Date(data$tm)), type="l", col="#000000");
 ## plot(1:n, X$value + hedge[, 1], col="#0000FF", type="l");
