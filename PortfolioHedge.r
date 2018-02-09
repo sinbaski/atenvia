@@ -43,7 +43,8 @@ ptfl.hedge <- function(sample, lookback, money, confidence, loss.tol)
         sig <- matrix(0, nrow=2, ncol=2);
         mu <- rep(NA, 2);
         for (i in 1:2) {
-            sig[i, i] <- sum(models[[i]]$alpha * models[[i]]$r.t^2 + models[[i]]$beta * models[[i]]$sigma.t^2 ) + models[[i]]$omega;
+            sig[i, i] <- sum(models[[i]]$alpha * models[[i]]$r.t^2 + models[[i]]$beta * models[[i]]$sigma.t^2) +
+                models[[i]]$omega;
             sig[i, i] <- sqrt(sig[i, i]);
             mu[i] <- models[[i]]$mu;
             ## Update the model parameters
@@ -123,7 +124,8 @@ cal.hedge <- function(X, lookback, confidence=0.05, loss.tol=0.05)
         sig <- matrix(0, nrow=2, ncol=2);
         mu <- rep(NA, 2);
         for (i in 1:2) {
-            sig[i, i] <- sum(models[[i]]$alpha * models[[i]]$r.t^2) + sum(models[[i]]$beta * models[[i]]$sigma.t^2) + models[[i]]$omega;
+            sig[i, i] <- sum(models[[i]]$alpha * models[[i]]$r.t^2) + sum(models[[i]]$beta * models[[i]]$sigma.t^2) +
+                models[[i]]$omega;
             sig[i, i] <- sqrt(sig[i, i]);
             mu[i] <- models[[i]]$mu;
             ## Update the model parameters
@@ -165,6 +167,38 @@ cal.hedge <- function(X, lookback, confidence=0.05, loss.tol=0.05)
     return(list(hit=H, DD=DD, hedge=hedge, ES=ES));
 }
 
+cal.hedge.4 <- function(X, lookback=40, confidence)
+{
+    n <- dim(X)[1];
+    ## Number of shares to hedge.
+    hedge <- rep(0, n);
+    ## Number of shares held
+    holding <- rep(0, n);
+    for (t in (lookback):n) {
+        holding[t] <- holding[t-1];
+        result <- t.test(X$spy[(t-lookback+1):t]);
+        if (result$p.value < confidence && result$estimate < 0) {
+            ## The SPY drift is significantly negative.
+            model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
+            holding[t] <- -X$net_expo[t] * coef(model)[2]/X$closing[t];
+        } else if (result$p.value < confidence && result$estimate > 0) {
+            ## The SPY drift is significantly negative.
+            model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
+            holding[t] <- 0;
+        }
+    }
+    
+    cash <- rep(0, n);
+    for (t in 2:n) {
+        cash[t] <- cash[t-1] - (holding[t] - holding[t-1])* X$closing[t];
+    }
+    Y <- cash + holding * X$closing + X$value;
+    Z <- cummax(Y);
+    DD <- (Z - Y)/Z;
+    return(list(hit=1 - Y/X$value, DD=DD, hedge=hedge, Y=Y));
+}
+
+
 ##
 ## X: a matrix with the following columns, from 1st to the last.
 ## X$atv_stk: Returns of the portfolio
@@ -172,7 +206,51 @@ cal.hedge <- function(X, lookback, confidence=0.05, loss.tol=0.05)
 ## X$net_expo: net exposure of the portfolio
 ## X$closing: Prices of SPY at market close
 ## X$value: Worth of the portfolio at market close.
-cal.hedge.2 <- function(X, lookback, threshold)
+cal.hedge.3 <- function(X, lookback=40, threshold=0.2)
+{
+    n <- dim(X)[1];
+    ## Number of shares to hedge.
+    hedge <- rep(0, n);
+    ## Number of shares held
+    holding <- rep(0, n);
+    sharpe <- rep(NA, n);
+    ## Number of trading days in a year
+    N <- 252;
+    CdDD <- cummax(X$value) - X$value;
+    ## for (t in 161:n) {
+    for (t in (lookback):n) {
+        holding[t] <- holding[t-1];
+        ## Compute the entry point to start hedging
+        dist.ret <- fit.dist(X$spy[(t-lookback+1):t]);
+        if (dist.ret$bic == Inf) next;
+        sharpe[t] <- dist.ret$mu/dist.ret$sig;
+        if (sharpe[t] < -threshold) {
+            ## The SPY drift is significantly negative.
+            model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
+            holding[t] <- -X$net_expo[t] * coef(model)[2]/X$closing[t];
+        } else if (sharpe[t] > threshold) {
+            holding[t] <- 0;
+        }
+    }
+    
+    cash <- rep(0, n);
+    for (t in 2:n) {
+        cash[t] <- cash[t-1] - (holding[t] - holding[t-1])* X$closing[t];
+    }
+    Y <- cash + holding * X$closing + X$value;
+    Z <- cummax(Y);
+    DD <- (Z - Y)/Z;
+    return(list(hit=1 - Y/X$value, DD=DD, hedge=hedge, Y=Y));
+}
+
+##
+## X: a matrix with the following columns, from 1st to the last.
+## X$atv_stk: Returns of the portfolio
+## X$spy: returns of SPY
+## X$net_expo: net exposure of the portfolio
+## X$closing: Prices of SPY at market close
+## X$value: Worth of the portfolio at market close.
+cal.hedge.2 <- function(X, lookback=40, threshold=0.1)
 {
     n <- dim(X)[1];
     ## Number of shares to hedge.
@@ -188,7 +266,7 @@ cal.hedge.2 <- function(X, lookback, threshold)
         holding[t] <- holding[t-1];
         ## Compute the entry point to start hedging
         dist.ret <- fit.dist(X$spy[(t-lookback+1):t]);
-        if (dist.ret$bic == Inf) continue;
+        if (dist.ret$bic == Inf) next;
         drift[t] <- dist.ret$mu;
         if (dist.ret$mu * N < -threshold) {
             ## The SPY drift is significantly negative.
@@ -239,7 +317,7 @@ cal.hedge.1 <- function(X, lookback, dd.entry, dd.exit)
     adj.min <- 0.005;
     n <- dim(X)[1];
     hedge <- rep(0, n);
-    CdDD <- cummax(X$value) - X$value;
+    CdDD <- 1 - X$value/cummax(X$value);
     for (t in (lookback + 1):n) {
         if (hedge[t-1] == 0 && CdDD[t] <= dd.entry) {
             next;
@@ -263,12 +341,22 @@ cal.hedge.1 <- function(X, lookback, dd.entry, dd.exit)
     Y <- H + X$value;
     Z <- cummax(Y);
     DD <- (Z - Y)/Z;
-    return(list(hit=H/X$value, DD=DD, hedge=hedge));
+    return(list(Y=Y, hit=-H/X$value, DD=DD, hedge=hedge));
 }
 
 database = dbConnect(MySQL(), user='sinbaski', password='q1w2e3r4',
                      dbname='market', host="localhost");
 
+## stmt <- paste(
+##     "select S2.tm, S2.closing,",
+##     "atenvia.net_expo, atenvia.value, atenvia.IntDD,",
+##     "atv_stk, (S2.closing - S1.closing)/S1.closing as spy",
+##     "from atv_returns join spy_daily as S1 join spy_daily as S2",
+##     "join atenvia",
+##     "on atv_returns.tm = S2.tm",
+##     "and atenvia.tm = S2.tm",
+##     "and S2.tm = (select tm from spy_daily where tm > S1.tm limit 1);"
+## );
 stmt <- paste(
     "select S2.tm, S2.closing,",
     "atenvia.net_expo, atenvia.value, atenvia.IntDD,",
@@ -290,63 +378,30 @@ lookback <- 40;
 ## peaks <- unlist(lapply(1:n, function(i) max(X$value[1:i])))
 ## draw.down <- unlist(lapply(1:n, function(i) max(X$value[1:i])))/X$value - 1;
 
-L <- seq(from=20, to=60, by=1);
-T <- seq(from=0.05, to=0.3, by=0.05);
-result <- array(NA, dim=c(length(L), length(T), 3));
-for (i in 31:length(L)) {
-    for (j in 1:length(T)) {
-        hd.2 <- cal.hedge.2(X, L[i], T[j]);
-        result[i, j, 1] <- max(hd$DD) * 0.7 - 0.3 * min(hd$hit);
-        result[i, j, 2] <- max(hd$DD);
-        result[i, j, 3] <- mean(hd$hit);
-    }
-}
-idx <- which(result[1:30,,1] == min(result[1:30,,1]), arr.ind=TRUE);
+result1 <- cal.hedge.1(X, lookback=40, dd.entry=0.05, dd.exit=0.02);
+result2 <- cal.hedge.2(X, lookback=40, threshold=0.1);
+result3 <- cal.hedge.3(X, lookback=40, threshold=0.3);
+result4 <- cal.hedge.4(X, lookback=40, confidence=0.1);
+summary <- matrix(c(
+    max(result1$DD), mean(result1$DD), max(result1$hit), mean(result1$hit),
+    max(result2$DD), mean(result2$DD), max(result2$hit), mean(result2$hit),
+    max(result3$DD), mean(result3$DD), max(result3$hit), mean(result3$hit),
+    max(result4$DD), mean(result4$DD), max(result4$hit), mean(result4$hit)),
+    byrow=TRUE, nrow=4, ncol=4);
+summary
 
-
-
-IntDD <- data$IntDD;
-
-dd.entry <- seq(from=0.015, to=0.027, by=0.001);
-dd.exit <- seq(from=0.005, to=0.017, by=0.001);
-result <- array(NA, dim=c(length(dd.entry), length(dd.exit), 3));
-for (i in 1:length(dd.entry)) {
-    for (j in 1:length(dd.exit)) {
-        hd.1 <- cal.hedge.1(X, lookback, dd.entry[i], dd.exit[j]);
-        result[i, j, 1] <- max(hd$DD) * 0.7 - 0.3 * min(hd$hit);
-        result[i, j, 2] <- max(hd$DD);
-        result[i, j, 3] <- mean(hd$hit);
-    }
-}
-idx <- which(result[1:20,,1] == min(result[1:20,,1]), arr.ind=TRUE);
-
-
-
-
-plot(xts(DD, order.by=as.Date(X$tm)), type="l", col="#000000");
-
+pdf('/tmp/hedge.pdf');
 graphics.off();
-##par(mfrow=c(2, 1));
-plot(xts(X$value, order.by=as.Date(data$tm)), type="l", col="#000000");
-## lines(xts(hd$Y, order.by=as.Date(data$tm)), col="#00FF00");
-lines(xts(hd.2$Y, order.by=as.Date(data$tm)), col="#00FF00");
+plot(xts(X$value, order.by=as.Date(data$tm)),
+     main="Portfolio & Hedge",
+     type="l", col="#000000");
+## lines(xts(Y, order.by=as.Date(data$tm)), col="#FF0000");
+lines(xts(result1$Y, order.by=as.Date(data$tm)), col="#FF0000");
+lines(xts(result2$Y, order.by=as.Date(data$tm)), col="#0000FF");
+lines(xts(result3$Y, order.by=as.Date(data$tm)), col="#00FF00");
+lines(xts(result4$Y, order.by=as.Date(data$tm)), col="#6600CC");
+dev.off();
 
-plot(xts(Y - X$value, order.by=as.Date(data$tm)), type="l", col="#000000");
-## plot(1:n, X$value + hedge[, 1], col="#0000FF", type="l");
-## lines(1:n, X$value);
 
-lookback <- 120;
-refit <- 20;
-## [$ amount of SPY, expected shortfall]
-hedge <- matrix(0, nrow=n, ncol=2);
-for (t in (lookback + 1):(n-refit+1)) {
-    if ((t-1) %% refit == 0) {
-        I <- (t - lookback):(t + refit - 1);
-        hedge[t:(t+refit - 1), ] <- ptfl.hedge(cbind(X$atv_stk[I], X$spy[I]), lookback, X$net_expo[t:(t+refit - 1)], 0.05, 0.05);
-    }
-}
-plot(xts(X$value + abs(hedge[, 1]), order.by=as.Date(X$tm)), col="#000000", lwd=2, ylim=c(0, max(X$value + abs(hedge[, 1]))));
-lines(xts(x=X$value, order.by=as.Date(X$tm)), col="#00FF00", lwd=1);
-abline(h=0, lwd=2, col="#FF0000");
 
 

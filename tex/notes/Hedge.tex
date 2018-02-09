@@ -1,0 +1,301 @@
+\documentclass{article}
+\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue,bookmarksopen=true]{hyperref}
+\usepackage{bookmark}
+\input{../physics_common}
+
+\title{Hedge Algorithms}
+\author{Xiaolei Xie \\
+  xiaolei.xie@atenvia.com
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{A Linear Model}\label{sec:lm}
+At the centre of the hedge algorithms described in this report are
+linear models of returns. Let $Y_t$ denote the return of the
+portfolio at time $t$, and $X_t$ denote the return of SPY at time $t$.
+We want to hedge the portfolio against fluctuations of SPY, i.e. make
+the returns of the portfolio uncorrelated (neutral) to the returns of SPY,
+when such neutrality is desirable, for example, when the market is considered
+to be trending down.
+
+The idea is to assume a persistent linear relation between the returns of
+the portfolio and the returns of SPY. In mathematical terms, we write
+\begin{equation}
+  \label{eq:ghtht}
+  Y_t = a X_t + \epsilon_t  
+\end{equation}
+where $a$ is the regression coefficient and $\epsilon_t$ is a random
+variable independent of $X_t$.
+Viewed from a different angle, equation \eqref{eq:ghtht} gives a hedging
+algorithm. Moving the $a X_t$ term to the left side, we get
+\[
+  Y_t - a X_t = \epsilon_t    
+\]
+This formula says, if, for every dollar worth of the portfolio, we short
+$a$ dollars worth of SPY, the return of our holding, i.e. the portfolio
+plus the short position on SPY, is a random variable independent of
+$X_t$ -- we now hold a collection of assets whose overall return is
+uncorrelated to that of SPY, which is what we set off to achieve.
+
+To estimate the value of $a$ and hence the correct number of shares of SPY
+to short, one can use the procedure of {\it Ordinary Least Squares} (OLS).
+We cover this topic in \S\ref{sec:ols}. Once the value of $a$ has been estimated,
+it remains to determine when a short position on SPY should be
+attained. Algorithm 1 (cf. \S\ref{sec:when}) bases this decision on
+the drawdown of the portfolio while the others rely on estimating
+$X_t$ and assessing its significance. The details are found in \S\ref{sec:when}.
+
+% In the case of the latter, a
+% short position on SPY should be in place on day $t$ when the return of SPY 
+% on this day ($X_t$) is negative. But we will never know for sure a future return
+% of SPY, so we have to be content with an estimate.
+
+\section{Timing}\label{sec:when}
+In this section we describe the hedge algorithms one by one. They all
+share the procedure of computing $a$, the correct dollar amount of SPY
+to hedge, whenever such a hedge is relevant, and differentiate from
+each other in their ways to assess the significance of a possible
+downward movement of SPY. Each way of assessment leads to an answer to
+the question of ``when to hedge'' and thus to a distinctive hedge
+algorithm.
+
+The first hedge algorithm triggers the hedge whenever the
+drawdown of the portfolio exceeds a pre-defined level. The argument
+and the pre-condition for this is that the return of the portfolio
+($X_t$) is positively correlated to that of SPY ($Y_t$), owing to
+the fact that the portfolio largely consists of long positions of
+equities that benefit from a bullish market. Hence when the
+portfolio is losing value, a downward-trending SPY is likely to be
+responsible.
+
+By similar reasoning, we lift the hedge, i.e. clear the short position
+on SPY, when the portfolio drawdown is below a pre-defined level. We
+consider a significant reduction in the drawdown as an indication that
+the SPY has reversed its previous negative trend and made a short
+position on it undesirable. More precisely, we short SPY if we find
+\[
+  D_t = 1 - {P_t \over \max_{s \leq t} P_s} > c_1 > 0
+\]
+where $P_s$ denotes the price of SPY at time $s$. $c_1$ is a positive
+constant. To avoid alternating behaviour in hedging, we don't clear
+the short position on SPY as soon as the drawdown $D_t$ falls below
+$c_1$. Rather, we keep the position until the drawdown has receded
+below a value even lower than $c_1$. To make this precise, let $a_t$
+denote the size of the hedge position on day $t$. Let $f(t)$ be the
+function that gives the size of the hedge position on day $t$ using
+OLS according to the descriptions in \S \ref{sec:lm}. We short SPY by
+$a_t = f(t)$ dollars if $D_t > c_1$; we clear the
+hedge position by setting $a_t = 0$ if $D_t < c_2 < c_1$.
+
+
+Moreover, we would like to minimise the trading cost attributed to
+hedging. For this purpose, we keep the size of the hedge position
+unchanged from the previous day as long as the dollar amount of
+adjustment to the position is relatively small. In precise terms, if
+$a_{t-1} > 0$, then we assign $a_{t-1}$ to $a_t$ unless
+$|f(t)/f(t-1) - 1| > b > 0$.
+
+The 2nd, 3rd and 4th algorithms trigger the hedge by estimating
+the mean of the return of SPY ($X_t$) and assessing its
+significance. While the procedure of estimation is straightforward and
+unsophisticated, assessing the significance is more complicated. On
+the one hand, we want to be reasonably certain that a negative trend
+is at work before taking any action; on the other hand, we want to be
+able to respond to a negative trend at an early stage. These are
+indeed contradicting wishes and we have to strike a balance.
+
+An obvious way to estimate $X_t$ is to assume that the same law of
+distribution persists over its recent history up to the day $t$. Let
+$L$ denote the length of this history as measured by days. We estimate
+the distribution of $(X_s)_{s=t-L, \dots, t-1}$ and assume the same
+distribution applies to $X_t$. For a small $L$, i.e. a short history,
+the effect of heteroscedasticity is negligible. So we assume, for
+simplicity, that $(X_s)_{s=t-L, \dots, t-1}$ are independent and
+identically distributed. Under this assumption, estimating the mean of
+$X_t$ ($\E X_t$) is straightforward. By the law of large numbers,
+\[
+  \bar X_t = {1 \over L} \sum_{i=t-L}^{t-1} X_i \overset{a.s.}{\to} \E X_t,
+  \quad
+  L \to \infty
+\]
+That is, the arithmetic average of the historical returns tends to the
+mean value of $X_t$ as the length of the history taken into account
+tends to infinity. However, an erratic behaviour will result if we
+short SPY as soon as a negative $\bar X_t$ is obtained, regardless of
+its magnitude. Therefore, we must assess the significance of the
+estimated value of $\E X_t$ and act only if this value is significant.
+\begin{enumerate}
+\item The 2nd algorithm assesses the significance of the mean of $X_t$
+  by comparing $\bar X_t$ with constant threshold $c_1 > 0$. To make this
+  threshold more intuitive, we annualise $\bar X_t$. On average, there
+  are 252 trading days in a year. If $252 \bar X_t < -c_1 < 0$, we
+  consider the estimated downward trend of SPY to be significant and
+  certain enough to support a short position.
+
+  Conversely, if we find $252 \bar X_t > c_2 > 0$, we consider SPY to be
+  experiencing a significant upward trend and proceed to clear any
+  short position on SPY, i.e. to lift the hedge if it is in place.
+
+  In all other situations, we keep the hedge position unchanged from
+  the previous day.
+  
+\item The 3rd algorithm uses the Sharpe ratio as the criterion to
+  assess the significance of the estimated value $\bar X_t$ of $\E
+  X_t$. Effectively we are treating the problem of hedging as one of
+  trading, under the constraint that only short positions on SPY are
+  allowed.
+
+  To this end, we need not only an estimate of the mean value of $X_t$
+  ($\E X_t$) but also its variance. Considering that we are always
+  dealing with a short recent history of SPY, it is reasonable to
+  assume the returns of SPY $(X_s)_{s = t-L, \dots, t-1}$ are
+  independent and identically normally distributed. Under this
+  assumption, we infer the distribution of $X_t$ using {\it Maximum
+    Likelihood Estimate} (MLE). This is a standard procedure. We cover
+  it in \S\ref{sec:mle}.
+
+  Suppose by MLE we have obtained $\mu_t = \E X_t$ and
+  $\sigma_t^2 = \var(X_t)$. Then, taking the risk-free interest rate
+  as 0, the Sharpe ratio is given by $s_t = \mu_t/\sigma_t$. We short
+  SPY if $s_t < -c_1 < 0$ and clear the short position if
+  $s_t > c_1 > 0$. In all other situations, we leave the hedge
+  position unchanged from the previous day.
+
+\item The 4th algorithm assesses the significance of the estimated
+  downward trend of SPY using statistical testing. In the context of
+  hedging, we want to test the null-hypothesis
+  \[
+    \mathcal H_0:\quad
+    \E X_t = 0.
+  \]
+  against the alternative
+  \[
+    \mathcal H_1:\quad
+    \E X_t \neq 0.
+  \]
+  The test-statistic to use for this purpose is
+  \[
+    T = \bar X_t \sqrt{L(L - 1)} \left[
+      \sum_{s=t-L}^{t-1} (X_s - \bar X_t)^2
+    \right]^{-1/2}.
+  \]
+  Under the null hypothesis, $T$ is known to have $t$-distribution
+  with $L-1$ degrees of freedom. Let $F(\cdot)$ denote the
+  distribution function of $t$-distribution with $L-1$ degrees of
+  freedom. Define the $p$-value of the test as
+  \[
+    p = \left\{
+      \begin{array}{ll}
+        F(T) & T < 0 \\
+        1 - F(T) & T > 0
+      \end{array}
+    \right.
+  \]
+  We reject the null hypothesis if, for a pre-defined value $\alpha$,
+  we find $p < \alpha$. The $p$-value is the probability of obtaining
+  a sample that produces a test statistic even larger in absolute value
+  than the observed value $T$ under the null hypothesis. Thus the
+  smaller the p-value, the less likely the null hypothesis. When we
+  reject the null hypothesis on condition $p < \alpha$, we are assured
+  that the probability of falsely rejecting the null hypothesis is no
+  more than $\alpha$.
+
+  For the purpose of hedging, if we reject the null hypothesis and
+  find $\bar X_t < 0$, we short SPY by the due amount; if instead we
+  reject the null hypothesis but find $\bar X_t > 0$, we clear any
+  short position on SPY. In all other situations, we leave the hedge
+  position unchanged from the previous day.
+  
+\end{enumerate}
+
+\section{Ordinary Least Squares}\label{sec:ols}
+When a linear relation eq.\eqref{eq:ghtht} is assumed between two
+random variables $Y_t$ and $X_t$, we like to find the regression
+coefficient $a$ from a sample $(X_s, Y_s)_{s=t-L, \dots,
+  t-1}$. Without further knowledge about the residual $\epsilon_t$, it
+is plausible to find $a$ as
+\begin{equation}
+  \label{eq:joi90}
+  a = \argmin_{\beta} \sum_{s=t-L}^{t-1} (Y_s - \beta X_s)^2
+  =
+  \left(
+    \sum_{s=t-L}^{t-1} X_s^2
+  \right)^{-1}
+  \left(
+    \sum_{s=t-L}^{t-1} X_s Y_s
+  \right)
+\end{equation}
+That is, we find $a$ as the value that minimises the total squared
+error between the returns of the portfolio $Y_t$ and the returns of
+SPY $X_t$ multiplied by the regression coefficient.
+
+One can see this method is very general. If we want to hedge the
+portfolio against multiple market factors, we can follow the same
+procedure. In this case, equation \eqref{eq:joi90} would become an
+equation system with as many unknown variables as there are factors to
+hedge against. However, the quadratic nature of eq. \eqref{eq:joi90}
+is carried over to the scenario of multiple regression
+coefficients. Analytic solutions are therefore usually possible.
+
+Since the sample $(X_s, Y_s)_{s=t-L, \dots, t-1}$ is available at time
+$t$, we can formulate $a_t$, the regression coefficient at time $t$ as
+a function of $t$:
+\[
+  a_t = f(t) = \left(
+    \sum_{s=t-L}^{t-1} X_s^2
+  \right)^{-1}
+  \left(
+    \sum_{s=t-L}^{t-1} X_s Y_s
+  \right)
+\]
+As discussed in \S\ref{sec:lm}, $a_t$ as given in the above formula
+tells us the dollar amount of SPY to short if we are to make the
+portfolio return uncorrelated to that of SPY. Of course, here we
+assume $a_t > 0$, as is often the case.
+
+\section{Maximum Likelihood Estimate}\label{sec:mle}
+As detailed in \S\ref{sec:when}, we need to estimate the distribution
+of the returns of SPY $X_t$ if we want to use the Sharpe ratio to decide
+when to create a hedge position. The method of {\it Maximum Likelihood
+Estimate} is a common approach to this problem. Assume we have a
+sample $(X_s)_{s = t-L, \dots, t-1}$, which is available at time
+$t$. Also assume the future return $X_t$ as well as this observed
+sample is normally distributed with mean $\mu$ and variance
+$\sigma^2$. Then it is our objective to estimate the parameters $\mu$
+and $\sigma^2$. Let $\phi(x, \mu, \sigma)$ denote the probability
+density function of the aforementioned distribution. The likelihood of
+a particular pair of values for $(\mu, \sigma)$, given the sample
+$(X_s)_{s = t-L, \dots, t-1}$, is the following
+\[
+  L(\mu, \sigma) = \prod_{s=t-L}^{t-1} \phi(X_s, \mu, \sigma)
+\]
+The MLE method aims to find the most likely values of the parameters
+$(\mu, \sigma)$, provided that the sample $(X_s)_{s = t-L, \dots,
+  t-1}$ has been observed. In other words, we would like to maximize
+the function $L$ with respect to both of its arguments
+$(\mu, \sigma)$. The values of $(\mu, \sigma)$ that maximize $L$ is
+what we are looking for.
+
+What remains to do is the standard procedure of optimization, for
+which a variety of methods are available. In the particular case of
+a normal distribution, the solution is simply
+\begin{eqnarray*}
+  \mu &=& {1 \over L} \sum_{s=t-L}^{t-1} X_s, \\
+  \sigma^2 &=& {1 \over L} \sum_{s=t-L}^{t-1} (X_s - \mu)^2.
+\end{eqnarray*}
+That is, the MLE solution to $(\mu, \sigma)$ is indeed the sample mean
+and the sample standard deviation without Bessel's correction.
+While assuming a normal distribution for $X_t$ is convenient and often
+sufficiently accurate as well, it may become inadequate when the
+effects of heavy tails and heteroscedasticity are more pronounced. We
+leave these topics to future research.
+
+\section{Parameters and Performance of Hedge Algorithms}
+
+
+\bibliographystyle{unsrt}
+\bibliography{../../../kkasi/thesis/econophysics}
+\end{document}
