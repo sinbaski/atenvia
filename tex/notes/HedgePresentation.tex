@@ -128,7 +128,7 @@ Atenvia Asset Management \\ % Your institution for the title page
   \end{itemize}
 \end{frame}
 
-\section{Linear Model of Asset Returns}
+\section{How much to hedge}
 \begin{frame}
   \frametitle{Linear Model of Asset Returns}
   \begin{eqnarray*}
@@ -139,7 +139,7 @@ Atenvia Asset Management \\ % Your institution for the title page
   \[
     Y_t = a X_t + \epsilon_t  
   \]
-  Viewed from a different angle, equation \eqref{eq:ghtht} gives a hedging algorithm:
+  This gives a hedging algorithm:
   \[
     Y_t - a X_t = \epsilon_t    
   \]
@@ -149,7 +149,190 @@ Atenvia Asset Management \\ % Your institution for the title page
   \end{itemize}
 \end{frame}
 
- \begin{frame}
+\begin{frame}
+  \frametitle{Ordinary Least Squares}
+  To calculate the regression coefficient $a$, we use {\it ordinary
+    least squares}.
+  \begin{equation*}
+    a = \argmin_{\beta} \sum_{s=t-L}^{t-1} (Y_s - \beta X_s)^2
+    =
+    \left(
+      \sum_{s=t-L}^{t-1} X_s^2
+    \right)^{-1}
+    \left(
+      \sum_{s=t-L}^{t-1} X_s Y_s
+    \right)
+  \end{equation*}
+  $a$ should be assigned the value that minimises the total squared
+  error between the returns of the portfolio $Y_t$ and the returns of
+  SPY $X_t$ multiplied by the regression coefficient.
+\end{frame}
+
+\section{When to hedge}
+\begin{frame}
+  \frametitle{When to hedge}
+  \begin{itemize}
+  \item Hedge when a downward trend dominates the motion - when the
+    return of SPY ($X_t$) has a negative mean ($\E X_t < 0$). Estimating
+    $\E X_t$ is straightforward:
+    \[
+      \bar X_t = {1 \over L} \sum_{i=t-L}^{t-1} X_i \overset{a.s.}{\to} \E X_t,
+      \quad
+      L \to \infty
+    \]
+  \item If we hedge every time $\bar X_t$ is found negative, we'll have
+    an erratic behaviour.
+  \item We want to hedge only if the estimated value of $\E X_t$ is
+    significant.
+  \item How to assess the significance of the estimate? Each approach
+    leads to a hedge algorithm.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on drawdown}
+  \begin{itemize}
+  \item When the drawdown exceeds a value $c_1$, we hedge by the due
+    amount;
+  \item When the portfolio recovers and the drawdown is below a value
+    $c_2 < c_1$, we lift the hedge;
+  \item When the amount of change to the hedge position is small,
+    we ignore the change to reduce the cost of trading due to
+    hedging.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on annualised equity return}
+  \begin{itemize}
+  \item Compare $\bar X_t$ with a constant threshold $c_1 > 0$ which
+    derives from typical annualised equity returns.
+  \item If $\bar X_t < -c_1$, we hedge;
+  \item if $\bar X_t > c_1$, we lift the hedge;
+  \item otherwise, we leave the hedge unchanged from the previous day
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on Sharpe Ratio}
+  \begin{itemize}
+  \item Hedging treated as trading
+  \item Only short positions allowed
+  \end{itemize}
+  Compute the Sharpe ratio as
+  \[
+    s_t = {\E X_t \over \sqrt{\var(X_t)}}
+    \quad
+    \text{risk-free interest rate taken as 0}
+  \]
+  To compute $\var(X_t)$, we need the distribution of $X_t$.
+  \begin{itemize}
+  \item Assume $(X_s)_{s=t-L,\dots, t-1}$ are independent, identically
+    normally distributed with mean $\mu$ and variance $\sigma^2$.
+    ($X_t \sim N(\mu, \sigma^2)$).
+  \item Estimate $(\mu, \sigma)$ by {\it Maximum Likelihood
+      Estimate}. The likelihood of a particular pair of values for
+    $(\mu, \sigma)$, given the sample $(X_s)_{s = t-L, \dots, t-1}$,
+    is
+    \[
+      L(\mu, \sigma) = \prod_{s=t-L}^{t-1} \phi(X_s, \mu, \sigma)
+    \]
+    where $\phi(x, \mu, \sigma)$ is the probability density function
+    of $N(\mu, \sigma^2)$.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on Sharpe Ratio}
+  We use standard optimization algorithms to find $(\mu, \sigma)$ that
+  maximise $L(\mu, \sigma)$. For a normal distribution:
+\begin{eqnarray*}
+  \mu &=& {1 \over L} \sum_{s=t-L}^{t-1} X_s, \\
+  \sigma^2 &=& {1 \over L} \sum_{s=t-L}^{t-1} (X_s - \mu)^2.
+\end{eqnarray*}
+\begin{itemize}
+\item a normal distribution is good enough in most cases
+\item Such effects as volatility clustering and heavy tails are not
+  accounted for by a normal distribution.
+\item We might need to use GARCH models and e.g. $t$-distributions in
+  these intricate situations.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on Sharpe Ratio}
+  Once $(\mu, \sigma)$ has been estimated, we
+  \begin{itemize}
+  \item short SPY if $s_t < -c_1 < 0$
+  \item clear the short position if $s_t > c_1 > 0$
+  \item leave the hedge position unchanged from the previous day in
+    all other cases
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on hypothesis testing}
+  We want to test the null-hypothesis
+  \[
+    \mathcal H_0:\quad
+    \E X_t = 0.
+    \quad
+    \text{against }
+    \quad
+    \mathcal H_1:\quad
+    \E X_t \neq 0.
+  \]
+  The test-statistic to use for this purpose is
+  \[
+    T = \bar X_t \sqrt{L(L - 1)} \left[
+      \sum_{s=t-L}^{t-1} (X_s - \bar X_t)^2
+    \right]^{-1/2}.
+  \]
+  Under the null hypothesis, $T$ is known to have $t$-distribution
+  with $L-1$ degrees of freedom.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on hypothesis testing}
+  $F(\cdot)$: distribution function of $t$-distribution with $L-1$
+  degrees of freedom. Define the $p$-value of the test as
+  \[
+    p = \left\{
+      \begin{array}{ll}
+        F(T) & T < 0 \\
+        1 - F(T) & T > 0
+      \end{array}
+    \right.
+  \]
+  For a defined value $\alpha$,
+  \begin{itemize}
+  \item Reject the null hypothesis if $p < \alpha$
+  \item The $p$-value is the probability of obtaining a sample that
+    produces a test statistic even larger in absolute value than the
+    observed value $T$ under the null hypothesis
+  \item The smaller the p-value, the less likely the null
+    hypothesis.
+  \item When we reject the null hypothesis on condition $p < \alpha$,
+    we are assured that the probability of falsely rejecting the null
+    hypothesis is no more than $\alpha$.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Significance assessment based on hypothesis testing}
+  \begin{itemize}
+  \item If we reject the null hypothesis and $\bar X_t < 0$, we short
+    SPY;
+  \item If we reject the null hypothesis and $\bar X_t > 0$, we clear
+    the hedge position;
+  \item Otherwise we leave the hedge position unchanged from the
+    previous day.
+  \end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
    \frametitle{Thank you!}
    Questions?
  \end{frame}

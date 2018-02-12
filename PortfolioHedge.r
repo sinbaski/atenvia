@@ -182,8 +182,7 @@ cal.hedge.4 <- function(X, lookback=40, confidence)
             model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
             holding[t] <- -X$net_expo[t] * coef(model)[2]/X$closing[t];
         } else if (result$p.value < confidence && result$estimate > 0) {
-            ## The SPY drift is significantly negative.
-            model <- lm(X$atv_stk~X$spy, subset=(t-lookback+1):t);
+            ## The SPY drift is significantly positive.
             holding[t] <- 0;
         }
     }
