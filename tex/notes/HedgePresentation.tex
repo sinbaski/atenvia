@@ -80,8 +80,8 @@
 %% \usepackage[dvipsnames]{xcolor}
 \usepackage{graphicx} % Allows including images
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule
-                      % in tables
-%% \usepackage{color}
+% in tables
+\usepackage{xcolor}
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg}
 \input{../physics_common}
@@ -330,6 +330,48 @@ Atenvia Asset Management \\ % Your institution for the title page
   \end{itemize}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Performance of the Algorithms}
+  \begin{table}[htb!]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+      \hline
+      & max DD & mean DD & max hit & mean hit \\
+      \hline
+      1st & 10.9\% &  0.6\% &  10.1\% &  3.2\% \\
+      \hline
+      2nd & 5.8\% &   0.5\% &  14.6\% &  8.1\% \\
+      \hline
+      3rd & 9.9\% &   0.6\% &  3.8\% &   0.0\% \\
+      \hline
+      4th & 9.5\% &   0.6\% &  2.4\% &  -1.4\% \\
+      \hline
+    \end{tabular}
+    \caption{Drawdown and Hit}
+    \label{tab:dd_hit}
+  \end{table}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance of the Algorithms}
+  \begin{minipage}{0.8\linewidth}
+    \begin{figure}[htb!]
+      \centering
+      \includegraphics[width=1.0\textwidth]{HedgeCurve}
+      \caption{Equity curves with/without the hedge}
+      \label{fig:hedge_performance}
+    \end{figure}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.15\linewidth}
+    \textcolor[HTML]{000000}{\small Original}
+    \begin{itemize}
+    \item \textcolor[HTML]{FF0000}{1st}
+    \item \textcolor[HTML]{0000FF}{2nd}
+    \item \textcolor[HTML]{00FF00}{3rd}
+    \item \textcolor[HTML]{6600CC}{4th}
+    \end{itemize}
+  \end{minipage}
+\end{frame}
 
 
 \begin{frame}
